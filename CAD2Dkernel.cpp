@@ -57,7 +57,7 @@ private:
 	}
 public:
 	Direction(double angle):x(cos(angle)),y(sin(angle)){}
-	Direction(double x, double y):x(x),y(y){
+	Direction(const double &xx, const double &yy):x(xx),y(yy){
 		double a = hypot(x,y);
 		x /= a; y /= a;
 	}
@@ -361,6 +361,8 @@ static int Point_index(lua_State *L) {
 
 
 
+static bool Vector_is(lua_State *L, int narg);
+static CAD2D::Vector *Vector_check(lua_State *L, int narg);
 
 static int Direction_push(lua_State *L, const CAD2D::Direction &d){
 	CAD2D::Direction *D = (CAD2D::Direction*)lua_newuserdata(L, sizeof(CAD2D::Direction));
@@ -390,6 +392,9 @@ static int Direction_create(lua_State *L){
 		return Direction_push(L, CAD2D::Direction(x, y));
 	}else if(lua_gettop(L) == 1 && lua_isnumber(L, 1)){
 		return Direction_push(L, CAD2D::Direction(lua_tonumber(L, 1)));
+	}else if(lua_gettop(L) == 1 && Vector_is(L, 1)){
+			const CAD2D::Vector *v = Vector_check(L, 1);
+		return Direction_push(L, CAD2D::Direction(v->x, v->y));
 	}
 	return luaL_error(L, "Invalid syntax for creating a Direction");
 }
@@ -842,6 +847,10 @@ static int Point_sub(lua_State *L){
 	return luaL_error(L, "Invalid subtraction with Point");
 }
 
+static int Direction_unm(lua_State *L){
+	const CAD2D::Direction *d = Direction_check(L, 1);
+	return Direction_push(L, -(*d));
+}
 static int Direction_mul(lua_State *L){
 	double s;
 	const CAD2D::Direction *d;
@@ -926,12 +935,14 @@ static int Circle_create(lua_State *L){
 static int Distance_dispatch(lua_State *L){
 	const int narg = lua_gettop(L);
 	if(2 == narg){
-		CAD2D::Point *p, *q;
-		CAD2D::Ray *r;
-		if((p = Point_check(L, 1)) && (q = Point_check(L, 2))){
+		if(Point_is(L, 1) && Point_is(L, 2)){
+			CAD2D::Point *p = Point_check(L, 1);
+			CAD2D::Point *q = Point_check(L, 2);
 			lua_pushnumber(L, Distance(*p, *q));
 			return 1;
-		}else if((r = Ray_check(L, 1)) && (p = Point_check(L, 2))){
+		}else if(Ray_is(L, 1) && Point_is(L, 2)){
+			CAD2D::Ray *r = Ray_check(L, 1);
+			CAD2D::Point *p = Point_check(L, 2);
 			lua_pushnumber(L, Distance(*r, *p));
 			return 1;
 		}
@@ -1010,6 +1021,7 @@ void CAD2Dkernel_register(lua_State *L){
 	static const luaL_Reg DirectionLib[] = {
 		{"__gc", &Direction_gc},
 		{"__index", &Direction_index},
+		{"__unm", &Direction_unm},
 		{"__mul", &Direction_mul},
 		{NULL, NULL}
 	};

@@ -1,0 +1,87 @@
+%!
+/Times-Roman findfont 0.2 scalefont setfont
+72 72 scale
+4.25 6.5 translate
+0.02 setlinewidth
+/circle{ % r
+dup 0 0 moveto
+0 exch 0 exch 0 360 arc closepath
+} bind def
+
+/arrowto { %tipx tipy *arrowto* ---
+<< %push mark on stack
+/tipy 3 -1 roll %arrow tip y coordinate
+/tipx 5 -1 roll %arrow tip x coordinate
+/tailx currentpoint %arrow start x coordinate
+/taily exch %arrow start y coordinate
+/tip 22.5 cos 22.5 sin div %arrow tip: 45 degree angle
+/headwidth 5 %head width is 5 line widths
+>> %create dictionary of "local variables"
+begin %push on dictionary stack
+/dx tipx tailx sub def %define dx along arrow
+/dy tipy taily sub def %define dy along arrow
+/angle dy dx atan def %arrow angle relaitve to origin
+/arrowlength
+dx dx mul dy dy mul add sqrt def %compute length of arrow
+/tiplength
+tip currentlinewidth 2 div mul def %compute length of arrow tip
+/base
+arrowlength tiplength sub %Compute where the arrowhead joins the tail.
+def
+/headlength
+tip headwidth mul neg %compute arrowhead length given head width
+def
+gsave %save graphics state
+currentpoint translate %translation to start of arrow
+angle rotate %rotate user space so arrow points right
+base 0 translate %translation to end of arrow base
+0 0 lineto stroke %construct and stroke line
+tiplength 0 translate %translation to tip of arrow
+0 0 moveto %move to tip of arrow
+currentlinewidth 2 div dup scale %scale to 1/2 linewidth
+headlength headwidth lineto %construct side of arrowhead
+headlength tip add 1
+headlength tip add -1
+headlength headwidth neg curveto %construct back of arrowhead
+closepath %construct side of arrowhead
+fill %fill arrowhead
+grestore %restore graphics state
+tipx tipy moveto %move current point to arrow tip
+end %pop dictionary fr dictionary stack
+} def %define the arrowto procedure
+
+/ctext { % x y string
+3 dict begin
+/string exch def
+/y exch def
+/x exch def
+0 0 moveto
+string dup stringwidth pop
+2 div
+x exch sub
+y moveto
+show
+end
+} def
+
+-0.35	0	moveto
+0.35	0	lineto
+0.35	0.6	lineto
+-0.35	0.6	lineto closepath
+stroke
+-0.35	0.6	moveto
+0.35	0.6	lineto
+-5.5511151231258e-17	0.80207259421637	lineto
+closepath
+stroke
+gsave	-0.1	1.0020725942164	translate
+0 0 moveto
+0.1	-0.2	arrowto
+grestore
+-0.100000 1.002073 (\(-5.55112e-17, 0.802073\)) ctext
+0.9	0.40103629710818	moveto
+0.9	0.80207259421637	arrowto
+0.9	0.40103629710818	moveto
+0.9	0	arrowto
+0.900000 0.401036 moveto (0.802073) show
+showpage

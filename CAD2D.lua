@@ -13,10 +13,10 @@ circle = CAD2D.Circle;
 
 function OutputHeader()
 	print('%!')
-	print('/Times-Roman findfont 2 scalefont setfont')
+	print('/Times-Roman findfont 0.2 scalefont setfont')
 	print('72 72 scale')
 	print('4.25 6.5 translate')
-	print('0.005 setlinewidth')
+	print('0.02 setlinewidth')
 
 	print('/circle{ % r\n' ..
 		'dup 0 0 moveto\n' ..
@@ -64,6 +64,20 @@ function OutputHeader()
 		'end %pop dictionary fr dictionary stack\n' ..
 		'} def %define the arrowto procedure\n'
 	)
+	print('/ctext { % x y string\n' ..
+		'3 dict begin\n' ..
+		'/string exch def\n' ..
+		'/y exch def\n' ..
+		'/x exch def\n' ..
+		'0 0 moveto\n' ..
+		'string dup stringwidth pop\n' ..
+		'2 div\n' ..
+		'x exch sub\n' ..
+		'y moveto\n' ..
+		'show\n' ..
+		'end\n' ..
+		'} def\n'
+	)
 end
 function OutputFooter()
 	print('showpage')
@@ -71,10 +85,17 @@ end
 
 function OutputText(arg)
 	if CAD2D.IsPoint(arg.at) then
-		print(string.format('%f %f moveto (%s) show',
-			arg.at.x, arg.at.y,
-			string.gsub(tostring(arg[1]), '([%(%)])', '\\%1')
-		))
+		if arg.centered then
+			print(string.format('%f %f (%s) ctext',
+				arg.at.x, arg.at.y,
+				string.gsub(tostring(arg[1]), '([%(%)])', '\\%1')
+			))
+		else
+			print(string.format('%f %f moveto (%s) show',
+				arg.at.x, arg.at.y,
+				string.gsub(tostring(arg[1]), '([%(%)])', '\\%1')
+			))
+		end
 	else
 		error('No location specified')
 	end
@@ -104,6 +125,21 @@ function OutputRay(arg)
 	print(r.origin.x, r.origin.y, 'moveto')
 	local tip = r.origin+l*r.direction
 	print(tip.x, tip.y, 'arrowto')
+end
+function OutputVector(arg)
+	if not CAD2D.IsVector(arg[1]) then
+		error('OutputVector expected a Vector')
+	end
+	local v = arg[1]
+	if CAD2D.IsPoint(arg.at) then
+		print('gsave', arg.at.x, arg.at.y, 'translate')
+		print('0 0 moveto')
+		print(v.x, v.y, 'arrowto')
+		print('grestore')
+	else
+		print('0 0 moveto')
+		print(v.x, v.y, 'arrowto')
+	end
 end
 
 function OutputRect(arg)
@@ -140,6 +176,53 @@ function OutputPoly(arg)
 				print(sc.x, sc.y, s.radius, math.deg(angle1), math.deg(angle2), 'arcn')
 			end
 		end
+	end
+end
+
+function LabelDimension(arg)
+	if not CAD2D.IsPoint(arg[1]) then
+		error('LabelDimension expected a Point')
+	end
+	if not CAD2D.IsPoint(arg[2]) then
+		error('LabelDimension expected a Point')
+	end
+	if not CAD2D.IsVector(arg.offset) then
+		error('LabelDimension expected a Vector')
+	end
+	local u = dir(arg.offset.rot)
+	local l = math.abs(dist(ray(arg[1], u), arg[2]))
+	local d = dir(arg.offset)
+	local p1 = arg[1] + arg.offset
+	local p2 = arg[2] + arg.offset
+	local d12 = dist(ray(arg[1], d), arg[2]);
+	if d12 >= 0 then -- p2 ahead of p1
+		p1 = p1 + d12*d
+	else
+		p2 = p2 - d12*d
+	end
+	local m = seg(p1,p2)[0.5]
+	OutputRay{ray(m,  u), length=0.5*l}
+	OutputRay{ray(m, -u), length=0.5*l}
+	local str = string.format('%g', l)
+	if CAD2D.IsVector(arg.textoffset) then
+		OutputText{str, at=m+arg.textoffset}
+	else
+		OutputText{str, at=m}
+	end
+end
+
+function LabelPoint(arg)
+	if not CAD2D.IsPoint(arg[1]) then
+		error('LabelPoint expected a Point')
+	end
+	local p = arg[1]
+	local str = string.format('(%g, %g)', p.x, p.y)
+	if CAD2D.IsVector(arg.textoffset) then
+		local to = p+arg.textoffset
+		OutputVector{-arg.textoffset, at=to}
+		OutputText{str, at=to,centered=true}
+	else
+		OutputText{str, at=p,centered=true}
 	end
 end
 
