@@ -765,7 +765,7 @@ static int Poly_create(lua_State *L){
 				p.push_back(*pp);
 			}
 		}
-	}else if(narg == 1 && lua_istable(L, 1)){
+	}else if(narg == 1 && lua_istable(L, 1) && lua_rawlen(L,1) > 1){
 		int ntab = lua_rawlen(L, 1);
 		for(int i = 1; i <= ntab; ++i){
 			lua_pushinteger(L, i);
