@@ -209,6 +209,10 @@ function LabelDimension(arg)
 	else
 		OutputText{str, at=m}
 	end
+	print('gsave currentlinewidth 0.5 mul setlinewidth')
+	print(arg[1].x, arg[1].y, 'moveto', p1.x, p1.y, 'lineto stroke')
+	print(arg[2].x, arg[2].y, 'moveto', p2.x, p2.y, 'lineto stroke')
+	print('grestore')
 end
 
 function LabelPoint(arg)
