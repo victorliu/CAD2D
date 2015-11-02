@@ -19,4 +19,6 @@ OutputPolygon{poly{A,B,C}}; Stroke()
 LabelPoint{C, textoffset=vec{-0.1,0.2}}
 LabelDimension{O, C, offset = 0.9*x}
 
+LabelPoint{A, textoffset=vec{-1,-2}}
+
 OutputFooter()

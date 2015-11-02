@@ -78,6 +78,29 @@ function OutputHeader()
 		'end\n' ..
 		'} def\n'
 	)
+	print('/textheight {\n' ..
+		'gsave                                  % save graphic context\n' ..
+		'{                            \n' ..
+		'	100 100 moveto                     % move to some point \n' ..
+		'	(HÍpg) true charpath pathbbox      % gets text path bounding box (LLx LLy URx URy)\n' ..
+		'	exch pop 3 -1 roll pop             % keeps LLy and URy\n' ..
+		'	exch sub                           % URy - LLy\n' ..
+		'}\n' ..
+		'stopped                                % did the last block fail?\n' ..
+		'{\n' ..
+		'	pop pop                            % get rid of "stopped" junk\n' ..
+		'	currentfont /FontMatrix get 3 get  % gets alternative text height\n' ..
+		'}\n' ..
+		'if\n' ..
+		'grestore                               % restore graphic context\n' ..
+		'} bind def\n' ..
+		'/textextents{ % str -> width height\n' ..
+		'	0 0 moveto\n' ..
+		'	true charpath pathbbox % xmin ymin xmax ymax\n' ..
+		'	3 -1 roll sub          % xmin xmax ymax-ymin\n' ..
+		'	3 1 roll sub neg exch\n' ..
+		'} bind def'
+	)
 end
 function OutputFooter()
 	print('showpage')
@@ -85,17 +108,28 @@ end
 
 function OutputText(arg)
 	if CAD2D.IsPoint(arg.at) then
-		if arg.centered then
-			print(string.format('%f %f (%s) ctext',
-				arg.at.x, arg.at.y,
-				string.gsub(tostring(arg[1]), '([%(%)])', '\\%1')
-			))
-		else
-			print(string.format('%f %f moveto (%s) show',
-				arg.at.x, arg.at.y,
-				string.gsub(tostring(arg[1]), '([%(%)])', '\\%1')
-			))
+		print('gsave', arg.at.x, arg.at.y, 'translate')
+		print(string.format('(%s)',
+			string.gsub(tostring(arg[1]), '([%(%)])', '\\%1')
+		))
+		if arg.textplacement == 'below' then
+			print('dup textextents exch -0.5 mul exch neg translate')
+		elseif arg.textplacement == 'above' then
+			print('dup textextents exch -0.5 mul exch pop 0 translate')
+		elseif arg.textplacement == 'belowleft' then
+			print('dup textextents exch -1 mul exch neg translate')
+		elseif arg.textplacement == 'belowright' then
+			print('dup textextents neg translate')
+		elseif arg.textplacement == 'aboveleft' then
+			print('dup textextents exch -1 mul exch translate')
+		elseif arg.textplacement == 'left' then
+			print('dup textextents exch -1 mul exch -0.5 mul translate')
+		elseif arg.textplacement == 'right' then
+			print('dup textextents -0.5 mul translate')
+		else -- aboveright
+			-- do nothing
 		end
+		print('0 0 moveto show grestore')
 	else
 		error('No location specified')
 	end
@@ -224,7 +258,26 @@ function LabelPoint(arg)
 	if CAD2D.IsVector(arg.textoffset) then
 		local to = p+arg.textoffset
 		OutputVector{-arg.textoffset, at=to}
-		OutputText{str, at=to,centered=true}
+		local a = math.deg(arg.textoffset.angle)
+		local placement = nil
+		if -22.5 <= a and a <= 22.5 then
+			placement = 'right'
+		elseif 22.5 <= a and a <= 67.5 then
+			placement = 'aboveright'
+		elseif 67.5 <= a and a <= 112.5 then
+			placement = 'above'
+		elseif 112.5 <= a and a <= 157.5 then
+			placement = 'aboveleft'
+		elseif -67.5 <= a and a <= -22.5 then
+			placement = 'belowright'
+		elseif -112.5 <= a and a <= -67.5 then
+			placement = 'below'
+		elseif -157.5 <= a and a <= -112.5 then
+			placement = 'belowleft'
+		else
+			placement = 'left'
+		end
+		OutputText{str, at=to, textplacement=placement}
 	else
 		OutputText{str, at=p,centered=true}
 	end

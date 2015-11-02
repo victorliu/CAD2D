@@ -64,6 +64,28 @@ show
 end
 } def
 
+/textheight {
+gsave                                  % save graphic context
+{                            
+	100 100 moveto                     % move to some point 
+	(HÍpg) true charpath pathbbox      % gets text path bounding box (LLx LLy URx URy)
+	exch pop 3 -1 roll pop             % keeps LLy and URy
+	exch sub                           % URy - LLy
+}
+stopped                                % did the last block fail?
+{
+	pop pop                            % get rid of "stopped" junk
+	currentfont /FontMatrix get 3 get  % gets alternative text height
+}
+if
+grestore                               % restore graphic context
+} bind def
+/textextents{ % str -> width height
+	0 0 moveto
+	true charpath pathbbox % xmin ymin xmax ymax
+	3 -1 roll sub          % xmin xmax ymax-ymin
+	3 1 roll sub neg exch
+} bind def
 -0.35	0	moveto
 0.35	0	lineto
 0.35	0.6	lineto
@@ -78,15 +100,27 @@ gsave	-0.1	1.0020725942164	translate
 0 0 moveto
 0.1	-0.2	arrowto
 grestore
--0.100000 1.002073 (\(-5.55112e-17, 0.802073\)) ctext
+gsave	-0.1	1.0020725942164	translate
+(\(-5.55112e-17, 0.802073\))
+dup textextents exch -1 mul exch translate
+0 0 moveto show grestore
 0.9	0.40103629710818	moveto
 0.9	0.80207259421637	arrowto
 0.9	0.40103629710818	moveto
 0.9	0	arrowto
-0.900000 0.401036 moveto (0.802073) show
-gsave
-currentlinewidth 0.5 mul setlinewidth
+gsave	0.9	0.40103629710818	translate
+(0.802073)
+0 0 moveto show grestore
+gsave currentlinewidth 0.5 mul setlinewidth
 0	0	moveto	0.9	0	lineto stroke
 -5.5511151231258e-17	0.80207259421637	moveto	0.9	0.80207259421637	lineto stroke
 grestore
+gsave	-1.35	-1.4	translate
+0 0 moveto
+1	2	arrowto
+grestore
+gsave	-1.35	-1.4	translate
+(\(-0.35, 0.6\))
+dup textextents exch -1 mul exch neg translate
+0 0 moveto show grestore
 showpage
