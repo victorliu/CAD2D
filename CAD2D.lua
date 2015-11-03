@@ -112,20 +112,22 @@ function OutputText(arg)
 		print(string.format('(%s)',
 			string.gsub(tostring(arg[1]), '([%(%)])', '\\%1')
 		))
-		if arg.textplacement == 'below' then
+		if arg.textplacement == 'center' then
+			print('dup textextents exch -0.5 mul exch -0.5 mul translate')
+		elseif arg.textplacement == 'below' then
 			print('dup textextents exch -0.5 mul exch neg translate')
 		elseif arg.textplacement == 'above' then
 			print('dup textextents exch -0.5 mul exch pop 0 translate')
 		elseif arg.textplacement == 'belowleft' then
 			print('dup textextents exch -1 mul exch neg translate')
 		elseif arg.textplacement == 'belowright' then
-			print('dup textextents neg translate')
+			print('dup textextents exch pop 0 exch neg translate')
 		elseif arg.textplacement == 'aboveleft' then
 			print('dup textextents exch -1 mul exch translate')
 		elseif arg.textplacement == 'left' then
 			print('dup textextents exch -1 mul exch -0.5 mul translate')
 		elseif arg.textplacement == 'right' then
-			print('dup textextents -0.5 mul translate')
+			print('dup textextents exch pop 0 exch -0.5 mul translate')
 		else -- aboveright
 			-- do nothing
 		end
@@ -133,6 +135,21 @@ function OutputText(arg)
 	else
 		error('No location specified')
 	end
+end
+function PolygonCenter(arg)
+	-- future support for other centers
+	-- default currently is by vertices
+	if not CAD2D.IsPoly(arg[1]) then
+		error('PolygonCenter expected a Poly')
+	end
+	local p = arg[1]
+	local cx = 0
+	local cy = 0
+	for i = 1,p.n do
+		cx = cx + p[i].x
+		cy = cy + p[i].y
+	end
+	return point(cx / p.n, cy / p.n)
 end
 
 function OutputPolygon(arg)
@@ -238,10 +255,31 @@ function LabelDimension(arg)
 	OutputRay{ray(m,  u), length=0.5*l}
 	OutputRay{ray(m, -u), length=0.5*l}
 	local str = string.format('%g', l)
+	local placement = arg.textplacement
+	if not placement then
+		local a = math.deg(arg.offset.angle)
+		if -22.5 <= a and a <= 22.5 then
+			placement = 'right'
+		elseif 22.5 <= a and a <= 67.5 then
+			placement = 'aboveright'
+		elseif 67.5 <= a and a <= 112.5 then
+			placement = 'above'
+		elseif 112.5 <= a and a <= 157.5 then
+			placement = 'aboveleft'
+		elseif -67.5 <= a and a <= -22.5 then
+			placement = 'belowright'
+		elseif -112.5 <= a and a <= -67.5 then
+			placement = 'below'
+		elseif -157.5 <= a and a <= -112.5 then
+			placement = 'belowleft'
+		else
+			placement = 'left'
+		end
+	end
 	if CAD2D.IsVector(arg.textoffset) then
-		OutputText{str, at=m+arg.textoffset}
+		OutputText{str, at=m+arg.textoffset, textplacement=placement}
 	else
-		OutputText{str, at=m}
+		OutputText{str, at=m, textplacement=placement}
 	end
 	print('gsave currentlinewidth 0.5 mul setlinewidth')
 	print(arg[1].x, arg[1].y, 'moveto', p1.x, p1.y, 'lineto stroke')
