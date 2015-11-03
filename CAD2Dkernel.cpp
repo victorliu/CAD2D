@@ -248,6 +248,20 @@ public:
 		int j = (i+1)%n;
 		return Arcseg(v[i].first, v[j].first, v[i].second);
 	}
+	bool Contains(const Point &p) const{ // only works for polygons for now
+		unsigned int i, j;
+		bool c = false;
+		unsigned int nv = v.size();
+		for(i = 0, j = nv-1; i < nv; j = i++){
+			if(
+				((v[i].first.y > p.y) != (v[j].first.y > p.y)) &&
+				(p.x < (v[j].first.x-v[i].first.x) * (p.y-v[i].first.y) / (v[j].first.y-v[i].first.y) + v[i].first.x)
+			){
+				c = !c;
+			}
+		}
+		return c;
+	}
 };
 
 Poly operator+(const Poly &p, const Vector &v){
@@ -846,6 +860,12 @@ static int Poly_arcseg(lua_State *L){
 	Arcseg_push(L, (*P)(i-1));
 	return 1;
 }
+static int Poly_contains(lua_State *L){
+	CAD2D::Poly *P = Poly_check(L, 1);
+	CAD2D::Point *pt = Point_check(L, 2);
+	lua_pushboolean(L, P->Contains(*pt));
+	return 1;
+}
 static int Poly_index(lua_State *L) {
 	CAD2D::Poly *P = Poly_check(L, 1);
 	if(lua_isnumber(L, 2)){
@@ -857,6 +877,9 @@ static int Poly_index(lua_State *L) {
 			return 1;
 		}else if(0 == strcmp("arcseg", lua_tostring(L, 2))){
 			lua_pushcfunction(L, &Poly_arcseg);
+			return 1;
+		}else if(0 == strcmp("contains", lua_tostring(L, 2))){
+			lua_pushcfunction(L, &Poly_contains);
 			return 1;
 		}
 	}
