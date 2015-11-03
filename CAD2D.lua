@@ -123,7 +123,7 @@ function OutputText(arg)
 		elseif arg.textplacement == 'belowright' then
 			print('dup textextents exch pop 0 exch neg translate')
 		elseif arg.textplacement == 'aboveleft' then
-			print('dup textextents exch -1 mul exch translate')
+			print('dup textextents exch -1 mul exch pop 0 translate')
 		elseif arg.textplacement == 'left' then
 			print('dup textextents exch -1 mul exch -0.5 mul translate')
 		elseif arg.textplacement == 'right' then
