@@ -250,6 +250,42 @@ public:
 	}
 };
 
+Poly operator+(const Poly &p, const Vector &v){
+	Poly ret(p);
+	for(std::vector<Poly::PointG>::iterator i = ret.v.begin(); i != ret.v.end(); ++i){
+		i->first.x += v.x;
+		i->first.y += v.y;
+	}
+	return ret;
+}
+Poly operator-(const Poly &p, const Vector &v){
+	Poly ret(p);
+	for(std::vector<Poly::PointG>::iterator i = ret.v.begin(); i != ret.v.end(); ++i){
+		i->first.x -= v.x;
+		i->first.y -= v.y;
+	}
+	return ret;
+}
+Poly operator*(const double &s, const Poly &p){
+	Poly ret(p);
+	for(std::vector<Poly::PointG>::iterator i = ret.v.begin(); i != ret.v.end(); ++i){
+		i->first.x *= s;
+		i->first.y *= s;
+	}
+	return ret;
+}
+Poly operator*(const Poly &p, const double &s){
+	return s*p;
+}
+Poly operator/(const Poly &p, const double &s){
+	Poly ret(p);
+	for(std::vector<Poly::PointG>::iterator i = ret.v.begin(); i != ret.v.end(); ++i){
+		i->first.x /= s;
+		i->first.y /= s;
+	}
+	return ret;
+}
+
 double Distance(const Ray &r, const Point &p){
 	// (p - r.p) . d
 	return (p.x - r.p.x) * r.d.x + (p.y - r.p.y) * r.d.y;
@@ -915,7 +951,39 @@ static int Vector_concat(lua_State *L){
 	return 1;
 }
 
-
+static int Poly_add(lua_State *L){
+	const CAD2D::Poly *p = Poly_check(L, 1);
+	if(Vector_is(L, 2)){
+		const CAD2D::Vector *v = Vector_check(L, 2);
+		return Poly_push(L, (*p)+(*v));
+	}
+	return luaL_error(L, "Invalid Poly addition");
+}
+static int Poly_sub(lua_State *L){
+	const CAD2D::Poly *p = Poly_check(L, 1);
+	if(Vector_is(L, 2)){
+		const CAD2D::Vector *v = Vector_check(L, 2);
+		return Poly_push(L, (*p)-(*v));
+	}
+	return luaL_error(L, "Invalid Poly subtraction");
+}
+static int Poly_mul(lua_State *L){
+	double s;
+	const CAD2D::Poly *p;
+	if(lua_isnumber(L, 1)){
+		s = luaL_checknumber(L, 1);
+		p = Poly_check(L, 2);
+	}else{
+		p = Poly_check(L, 1);
+		s = luaL_checknumber(L, 2);
+	}
+	return Poly_push(L, s*(*p));
+}
+static int Poly_div(lua_State *L){
+	double s = luaL_checknumber(L, 2);
+	const CAD2D::Poly *p = Poly_check(L, 1);
+	return Poly_push(L, (*p) / s);
+}
 
 static int Circle_create(lua_State *L){
 	std::vector<CAD2D::Point> p;
@@ -1079,6 +1147,10 @@ void CAD2Dkernel_register(lua_State *L){
 	static const luaL_Reg PolyLib[] = {
 		{"__gc", &Poly_gc},
 		{"__index", &Poly_index},
+		{"__add", &Poly_add},
+		{"__sub", &Poly_sub},
+		{"__mul", &Poly_mul},
+		{"__div", &Poly_div},
 		{NULL, NULL}
 	};
 
