@@ -262,6 +262,39 @@ public:
 		}
 		return c;
 	}
+	double Area() const{
+		unsigned int p, q;
+		double area = 0.;
+		const unsigned int n = v.size();
+		for(p=n-1, q=0; q < n; p = q++){
+			double g = v[p].second;
+			area += 0.5*(v[p].first.x*v[q].first.y - v[q].first.x*v[p].first.y);
+			if(0 != g){
+				double r = (1.+g*g) / (2*g);
+				double t = 0.5*hypot(v[p].first.x-v[q].first.x, v[p].first.y-v[q].first.y);
+				area += r*t*t*(atan(g)*r - 1.);
+			}
+		}
+		return area;
+	}
+	double Perimeter() const{
+		unsigned int p, q;
+		double perim = 0.;
+		const unsigned int n = v.size();
+		for(p=n-1, q=0; q < n; p = q++){
+			double g = v[p].second;
+			double t2 = hypot(v[p].first.x-v[q].first.x, v[p].first.y-v[q].first.y);
+			if(0 == g){
+				perim += t2;
+			}else{
+				perim += 0.5*(1+g*g)*atan(g)/g;
+			}
+		}
+		return perim;
+	}
+	Poly Offset(double h) const{
+		return Poly(*this);
+	}
 };
 
 Poly operator+(const Poly &p, const Vector &v){
@@ -866,6 +899,12 @@ static int Poly_contains(lua_State *L){
 	lua_pushboolean(L, P->Contains(*pt));
 	return 1;
 }
+static int Poly_offset(lua_State *L){
+	CAD2D::Poly *P = Poly_check(L, 1);
+	double h = luaL_checknumber(L, 2);
+	Poly_push(L, P->Offset(h));
+	return 1;
+}
 static int Poly_index(lua_State *L) {
 	CAD2D::Poly *P = Poly_check(L, 1);
 	if(lua_isnumber(L, 2)){
@@ -880,6 +919,15 @@ static int Poly_index(lua_State *L) {
 			return 1;
 		}else if(0 == strcmp("contains", lua_tostring(L, 2))){
 			lua_pushcfunction(L, &Poly_contains);
+			return 1;
+		}else if(0 == strcmp("area", lua_tostring(L, 2))){
+			lua_pushnumber(L, P->Area());
+			return 1;
+		}else if(0 == strcmp("perimeter", lua_tostring(L, 2))){
+			lua_pushnumber(L, P->Perimeter());
+			return 1;
+		}else if(0 == strcmp("offset", lua_tostring(L, 2))){
+			lua_pushcfunction(L, &Poly_offset);
 			return 1;
 		}
 	}
@@ -898,7 +946,7 @@ static int Point_sub(lua_State *L){
 	const CAD2D::Point *p = Point_check(L, 1);
 	if(Point_is(L, 2)){
 		const CAD2D::Point *q = Point_check(L, 2);
-		return Vector_push(L, CAD2D::Vector(*p,*q));
+		return Vector_push(L, (*p)-(*q));
 	}else if(Vector_is(L, 2)){
 		const CAD2D::Vector *v = Vector_check(L, 2);
 		return Point_push(L, (*p)-(*v));
